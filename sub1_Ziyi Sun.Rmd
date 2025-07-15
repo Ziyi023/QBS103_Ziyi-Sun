@@ -1,0 +1,96 @@
+---
+title: "Submission1 Assignment"
+author: "Ziyi Sun"
+output:
+  pdf_document:
+    latex_engine: xelatex
+  html_document: default
+  word_document: default
+---
+
+```{r}
+library(tidyverse)
+gene_data <- read.csv("QBS103_GSE157103_genes.csv", row.names = 1)
+meta_data <- read.csv("QBS103_GSE157103_series_matrix-1.csv", row.names = 1)
+head(gene_data[, 1:5])
+head(meta_data)
+```
+
+```{R}
+gene_data <- read.csv("QBS103_GSE157103_genes.csv", row.names = 1)
+meta_data <- read.csv("QBS103_GSE157103_series_matrix-1.csv", row.names = 1)
+
+# transpose gene_data, make each gene a column
+gene_data_t <- as.data.frame(t(gene_data))
+
+# add sample ID as a new column
+gene_data_t$SampleID <- rownames(gene_data_t)
+meta_data <- meta_data %>% rownames_to_column(var = "SampleID")
+
+# merge gene data and metadata by sample ID
+full_data <- inner_join(meta_data, gene_data_t, by = "SampleID")
+```
+
+```{R}
+plot_data <- full_data %>%
+  select(SampleID, AAMP, age, sex, icu_status)
+
+# convert AAMP to number type (just to make sure)
+plot_data$AAMP <- as.numeric(plot_data$AAMP)
+```
+
+```{R}
+# make histogram for AAMP gene expression
+ggplot(plot_data, aes(x = AAMP)) +
+  geom_histogram(bins = 30, fill = "#2C7BB6", color = "white", alpha = 0.85) +  # blue bars with white border
+  labs(
+    title = "Distribution of AAMP Expression",  # title of the plot
+    x = "AAMP Expression Level",                # x-axis label
+    y = "Number of Patients"                    # y-axis label
+  ) +
+  theme_classic(base_size = 14) +               # use simple theme with bigger font
+  theme(
+    plot.title = element_text(hjust = 0.5),     # center the title
+    axis.title = element_text(face = "bold")    # make axis labels bold
+  )
+```
+library(tidyverse)
+plot_data$age <- as.numeric(plot_data$age)
+
+```{R}
+plot_data <- plot_data %>% drop_na(age, AAMP)
+# make scatter plot between age and AAMP expression
+ggplot(plot_data, aes(x = age, y = AAMP)) +
+  geom_point(color = "#D7191C", size = 2, alpha = 0.6) +  # red points, a little transparent
+  geom_smooth(method = "lm", se = TRUE, color = "#2C7BB6", linetype = "dashed") +  # add regression line
+  labs(
+    title = "AAMP Expression vs Age",   # plot title
+    x = "Age (Years)",                  # x-axis label
+    y = "AAMP Expression"               # y-axis label
+  ) +
+  theme_classic(base_size = 14) +       # use simple theme with bigger font
+  theme(
+    plot.title = element_text(hjust = 0.5),     # center the title
+    axis.title = element_text(face = "bold")    # bold axis titles
+  )
+```
+
+```{R}
+# make boxplot for AAMP expression by sex and ICU status
+ggplot(plot_data, aes(x = sex, y = AAMP, fill = icu_status)) +
+  geom_boxplot(outlier.shape = NA, alpha = 0.7, color = "black") +  # boxplot with no dots for outliers
+  geom_jitter(position = position_jitterdodge(jitter.width = 0.2), alpha = 0.5, color = "grey30") +  # add small random points
+  labs(
+    title = "AAMP Expression by Sex and ICU Status",  # plot title
+    x = "Sex",                                        # x-axis label
+    y = "AAMP Expression",                            # y-axis label
+    fill = "ICU Status"                               # legend title
+  ) +
+  scale_fill_manual(values = c(" yes" = "#FDAE61", " no" = "#ABD9E9")) +  # set custom fill colors, match real values
+  theme_classic(base_size = 14) +                    # simple white background with bigger font
+  theme(
+    plot.title = element_text(hjust = 0.5),          # center the title
+    legend.position = "top",                         # move legend to top
+    axis.title = element_text(face = "bold")         # bold axis labels
+  )
+```
